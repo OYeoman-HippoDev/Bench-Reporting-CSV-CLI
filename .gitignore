@@ -1,0 +1,15 @@
+# Ignore CSV files
+*.csv
+
+# Maven
+/target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IntelliJ
+*.iml
+.idea/
+
+# Eclipse
+*.project
+*.classpath
+.settings/
