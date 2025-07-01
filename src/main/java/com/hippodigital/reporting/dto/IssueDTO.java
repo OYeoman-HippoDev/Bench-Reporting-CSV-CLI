@@ -32,6 +32,14 @@ public class IssueDTO {
     private List<Assignee> assignees;
     private List<String> labels;
 
+    public IssueDTO(String id, String name, State state, List<Assignee> assignees) {
+        this.id = id;
+        this.name = name;
+        this.state = state;
+        this.assignees = assignees;
+    }
+
+
     public String getId() {
         return id;
     }

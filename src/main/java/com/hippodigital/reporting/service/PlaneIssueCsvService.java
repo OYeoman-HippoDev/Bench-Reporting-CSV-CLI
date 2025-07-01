@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -35,10 +36,12 @@ public class PlaneIssueCsvService {
         PlaneIssueResponse response = planeApiClient.getIssues();
         List<IssueDTO> issues = Objects.requireNonNull(response).getResults();
         List<IssueDTO> filteredIssues = getFilteredIssues(issues, startDate, endDate);
-        List<IssueDTO> sortedIssues = getSortedIssues(filteredIssues);
+        List<IssueDTO> assigneeSeperatedIssues = getAssigneeSeperatedIssues(filteredIssues);
+        List<IssueDTO> sortedIssues = getSortedIssues(assigneeSeperatedIssues);
+        List<IssueDTO> removedDuplicateNameIssues = duplicateNameRemover(sortedIssues);
         Map<String, String> issueModuleNameMap = getIssueModuleNameMap();
 
-        return csvFormatBuilder(sortedIssues, issueModuleNameMap);
+        return csvFormatBuilder(removedDuplicateNameIssues, issueModuleNameMap, startDate);
     }
 
     private List<IssueDTO> getFilteredIssues(List<IssueDTO> issues, LocalDate startDate, LocalDate endDate) {
@@ -67,6 +70,21 @@ public class PlaneIssueCsvService {
         );
     }
 
+    private List<IssueDTO> getAssigneeSeperatedIssues(List<IssueDTO> filteredIssues) {
+        var seperatedIssues = new ArrayList<>(filteredIssues);
+        filteredIssues.forEach(
+            issueDTO -> {
+                if(issueDTO.getAssignees().size() > 1) {
+                    issueDTO.getAssignees().forEach(
+                        assignee -> seperatedIssues.add(new IssueDTO(issueDTO.getId(), issueDTO.getName(), issueDTO.getState(), List.of(assignee)))
+                    );
+                    seperatedIssues.remove(issueDTO);
+                }
+            }
+        );
+        return seperatedIssues;
+    }
+
     private List<IssueDTO> getSortedIssues(List<IssueDTO> issues) {
         issues.sort(Comparator.nullsLast(
             Comparator.comparing(
@@ -82,6 +100,23 @@ public class PlaneIssueCsvService {
         return issues;
     }
 
+    private List<IssueDTO> duplicateNameRemover(List<IssueDTO> issues) {
+        var namesList = new ArrayList<>();
+        issues.forEach(
+            issueDTO -> {
+                if(issueDTO.getAssignees().isEmpty()) return;
+                var assignee = issueDTO.getAssignees().get(0);
+                if (namesList.contains(assignee.getDisplay_name()) ) {
+                    assignee.setDisplay_name("duplicate");
+                } else {
+                    namesList.add(assignee.getDisplay_name());
+                }
+            }
+        );
+
+        return issues;
+    }
+
     private Map<String, String> getIssueModuleNameMap() {
         PlaneModuleResponse allModules = planeApiClient.getModules();
         Map<String, String> issueModuleNameMap = new HashMap<>();
@@ -94,27 +129,26 @@ public class PlaneIssueCsvService {
                     );
                 }
         );
+
         return issueModuleNameMap;
     }
 
-    private ByteArrayInputStream csvFormatBuilder(List<IssueDTO> sortedIssues, Map<String, String> issueModuleNameMap) throws IOException {
+    private ByteArrayInputStream csvFormatBuilder(List<IssueDTO> sortedIssues, Map<String, String> issueModuleNameMap, LocalDate startDate) throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         CSVFormat format = CSVFormat.Builder.create()
-                .setHeader("Person", "Week", "Commencing", "Activity", "Detail", "Days Expected to spend on this activity this week", "Achieved", "Links to outputs (where relevant)", "Module")
+                .setHeader("Person", "Week Commencing", "Activity", "Detail", "Days Expected to spend on this activity this week", "Achieved", "Links to outputs (where relevant)")
                 .build();
         CSVPrinter printer = new CSVPrinter(new PrintWriter(out), format);
 
         for (IssueDTO issue : sortedIssues) {
             printer.printRecord(
                     assigneeNamesResolver(issue.getAssignees()),
-                    null,
-                    null,
-                    null,
+                    startDate,
+                    issueModuleNameMap.get(issue.getId()),
                     issue.getName(),
                     null,
-                    issue.getState().getName().equalsIgnoreCase("done") ? "Yes" : "No",
-                    null,
-                    issueModuleNameMap.get(issue.getId())
+                    issue.getState().getName().equalsIgnoreCase("done") ? "Done" : "On going",
+                    null
             );
         }
 
@@ -124,11 +158,16 @@ public class PlaneIssueCsvService {
 
     private String assigneeNamesResolver(List<Assignee> assignees) {
         if(assignees.isEmpty()) return "No member(s) assigned";
+        if(assignees.get(0).getDisplay_name().equals("duplicate")) return "";
+
         StringBuilder assigneeNamesCellString = new StringBuilder();
         assignees.forEach(
             assignee -> {
-                var assigneeName = assignee.getFirst_name() + " " + assignee.getLast_name() + ", ";
-                assigneeNamesCellString.append(assigneeName);
+                assigneeNamesCellString
+                        .append(assignee.getFirst_name())
+                        .append(" ")
+                        .append(assignee.getLast_name())
+                        .append(", ");
             }
         );
 
