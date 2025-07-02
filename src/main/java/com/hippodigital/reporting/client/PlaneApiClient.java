@@ -1,8 +1,10 @@
 package com.hippodigital.reporting.client;
 
+import com.hippodigital.reporting.dto.Assignee;
 import com.hippodigital.reporting.dto.PlaneIssueResponse;
 import com.hippodigital.reporting.dto.PlaneModuleResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -10,6 +12,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
 
 @Component
 public class PlaneApiClient {
@@ -66,6 +70,20 @@ public class PlaneApiClient {
                 HttpMethod.GET,
                 entity,
                 PlaneIssueResponse.class
+        );
+
+        return response.getBody();
+    }
+
+    public List<Assignee> getMembers() {
+        HttpEntity<Void> entity = new HttpEntity<>(buildHeaders());
+        String membersUrl = PLANE_HIPPO_BENCH_URL_PREFIX + "/members/";
+
+        ResponseEntity<List<Assignee>> response = restTemplate.exchange(
+                membersUrl,
+                HttpMethod.GET,
+                entity,
+                new ParameterizedTypeReference<>() {}
         );
 
         return response.getBody();
