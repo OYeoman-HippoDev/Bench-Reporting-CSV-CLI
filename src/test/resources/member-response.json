@@ -1,0 +1,20 @@
+[
+  {
+    "id": "880d1009-0101-4b93-9794-b84d1a6cd123",
+    "first_name": "first-name-1",
+    "last_name": "last-name-1",
+    "email": "email.1@hippodigital.co.uk",
+    "avatar": "",
+    "avatar_url": "",
+    "display_name": "first-name-1.last-name-1"
+  },
+  {
+    "id": "880d1009-0101-4b93-9794-b84d1a6cd234",
+    "first_name": "first-name-2",
+    "last_name": "last-name-2",
+    "email": "email.2@hippodigital.co.uk",
+    "avatar": "",
+    "avatar_url": "",
+    "display_name": "first-name-2.last-name-2"
+  }
+]

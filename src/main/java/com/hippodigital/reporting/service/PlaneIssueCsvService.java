@@ -158,19 +158,10 @@ public class PlaneIssueCsvService {
 
     private String assigneeNamesResolver(List<Assignee> assignees) {
         if(assignees.isEmpty()) return "No member(s) assigned";
-        if(assignees.get(0).getDisplay_name().equals("duplicate")) return "";
 
-        StringBuilder assigneeNamesCellString = new StringBuilder();
-        assignees.forEach(
-            assignee -> {
-                assigneeNamesCellString
-                        .append(assignee.getFirst_name())
-                        .append(" ")
-                        .append(assignee.getLast_name())
-                        .append(", ");
-            }
-        );
+        Assignee assignee = assignees.get(0);
+        if(assignee.getDisplay_name().equals("duplicate")) return "";
 
-        return assigneeNamesCellString.toString().replaceAll(", $", "");
+        return assignee.getFirst_name()+" "+assignee.getLast_name();
     }
 }
